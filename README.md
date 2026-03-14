@@ -92,30 +92,20 @@ Example:
 If a user frequently searches for a specific specialty or location, the system prioritizes similar providers in future queries.
 
 Data Sources
-
-The system uses two CSV datasets:
-
-1. Provider Dataset
-
-Contains provider information such as:
-
-Provider Name
-
-Specialty
-
-Location
-
-Contact Information
-
-2. Network Dataset
-
-Contains network-related data such as:
-
-Provider Network Status
-
-Insurance Plan Information
-
 These datasets allow the system to retrieve structured provider information efficiently.
+Datasets
+
+The project uses two structured CSV datasets to simulate healthcare provider roster data.
+
+Provider Dataset
+
+This dataset contains basic provider information including provider name, specialty, and location. It allows the agent to perform provider search, specialty filtering, and location-based queries.
+
+Network Dataset
+
+This dataset contains information about provider network participation for different insurance plans. The agent uses this dataset to verify whether a provider is in-network or out-of-network.
+
+Both datasets were created as sample data to simulate real healthcare provider roster systems.
 
 Project Structure
 rosteriq-agent/
@@ -136,6 +126,9 @@ rosteriq-agent/
 ├── main.py
 ├── requirements.txt
 └── README.md
+
+
+
 Installation & Setup
 1. Clone the Repository
 git clone (https://github.com/34Ananya/RosterIQ.git)
