@@ -1,0 +1,457 @@
+{
+  "name": "Roster Upload Ingestion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "65be5538-2fbe-4054-9f94-3336aa7f03fb",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        96
+      ],
+      "id": "67ad9562-6d15-4160-88ed-359044b58238",
+      "name": "Webhook",
+      "webhookId": "65be5538-2fbe-4054-9f94-3336aa7f03fb"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "roster_files",
+          "mode": "list",
+          "cachedResultName": "roster_files"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "file_name": "Book1.csv",
+            "source_system": "demo",
+            "id": 10
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "source_system",
+              "displayName": "source_system",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        80,
+        192
+      ],
+      "id": "11655b49-685b-4243-b2d7-21c7d766e584",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "sOWQi8qRcgEkMfIX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "mode": "list",
+          "value": "roster_processing_schema",
+          "cachedResultName": "roster_processing_schema"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        80,
+        0
+      ],
+      "id": "f05a754f-3aac-40b5-964c-e717f99d0902",
+      "name": "Select rows from a table",
+      "credentials": {
+        "postgres": {
+          "id": "sOWQi8qRcgEkMfIX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "2db12e3d-fc15-4789-9323-96740f5db0b0",
+      "name": "Send Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        608,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        368
+      ],
+      "id": "60c2a773-e73f-4415-aae1-6dcaac96fbf0",
+      "name": "Header Mapper",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iQku7uXB7FOR0lff",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        416
+      ],
+      "id": "41ff744b-a9dd-4bed-8dcd-b5e58153342f",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iQku7uXB7FOR0lff",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get mapping from Header Mapper node\n// This assumes Header Mapper's output JSON is { mapping: { ... } }\nconst mapperItem = $items(\"Header Mapper\", 0, 0).json;\n\n// If it returned a string, uncomment and parse:\n// const mapperItem = JSON.parse($items(\"Header Mapper\", 0, 0).json.response);\n\nconst mapping = mapperItem.mapping || {};\n\n// Current row from Spreadsheet\nconst row = $input.item.json;\n\n// Initialize canonical object\nconst canonical = {\n  provider_key: null,\n  npi: null,\n  name: null,\n  specialty: null,\n  address_line1: null,\n  address_line2: null,\n  city: null,\n  state: null,\n  zip: null,\n  status: null,\n  effective_date: null,\n  termination_date: null,\n};\n\n// Apply mapping: for each original column, map into canonical\nfor (const [colName, value] of Object.entries(row)) {\n  const canonicalField = mapping[colName];\n  if (canonicalField && canonical.hasOwnProperty(canonicalField)) {\n    canonical[canonicalField] = value;\n  }\n}\n\n// Simple provider_key strategy: default to NPI if present\nif (!canonical.provider_key) {\n  canonical.provider_key = canonical.npi || `${canonical.name || \"\"}-${canonical.address_line1 || \"\"}`.trim();\n}\n\n// Output canonical row\nreturn [\n  {\n    json: canonical,\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        336
+      ],
+      "id": "8a533c6c-aa03-4911-b1f1-bfd295cc8047",
+      "name": "Apply Header Mapping"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        928,
+        192
+      ],
+      "id": "b5818284-a441-48ca-800c-ef46e0cbb8a5",
+      "name": "Header Mapper",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iQku7uXB7FOR0lff",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "id": "b1cdd563-2ede-4a08-945d-c7c0f3cd717d",
+      "name": "Send Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        80,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "status",
+              "value": "success",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "message",
+              "value": "Data processed successfully",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "headers",
+              "value": "={{ $json.headers }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "aecdf123-4145-41ba-9a06-bc30acb575d2",
+      "name": "Prepare Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "status",
+              "value": "error",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "message",
+              "value": "={{ $json.error.message }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "details",
+              "value": "={{ $json.error.description || 'An error occurred during processing' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "123c77e9-643c-4d59-956a-2f6ca987c08e",
+      "name": "Prepare Error Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1072,
+        192
+      ],
+      "id": "423592b1-ab4d-4d41-866c-7c5a546dde2a",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        512,
+        192
+      ],
+      "id": "29fe70fc-a322-49da-933a-baf773b9c094",
+      "name": "When chat message received",
+      "webhookId": "8f10da77-0c1f-419d-bbe7-d199442bbf20"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Select rows from a table",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Prepare Success Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select rows from a table": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Success Response": {
+      "main": [
+        [
+          {
+            "node": "Send Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Error Response": {
+      "main": [
+        [
+          {
+            "node": "Send Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply Header Mapping": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "287c2639-dad5-445d-aba6-b8b139bf1959",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3dc2dbf6e94d831d8e77e955fa3f0f21a5808744e7e6cea2b2e9eeb2d93b9ac4"
+  },
+  "id": "uH0YiMezeg81O5vd",
+  "tags": []
+}
