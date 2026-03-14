@@ -138,7 +138,7 @@ rosteriq-agent/
 └── README.md
 Installation & Setup
 1. Clone the Repository
-git clone https://github.com/your-username/rosteriq-agent.git
+git clone (https://github.com/34Ananya/RosterIQ.git)
 cd rosteriq-agent
 2. Create a Virtual Environment
 python -m venv venv
